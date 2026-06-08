@@ -1,0 +1,6 @@
+{
+  "name": "Multi-Subject Learning Diary",
+  "description": "White-label ESL multi-subject aggregator and AI portfolio narrative generator for Korean academy teachers.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
