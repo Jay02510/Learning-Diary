@@ -13,7 +13,8 @@ import {
   Loader2,
   Trash2,
   Eye,
-  Download
+  Download,
+  X
 } from "lucide-react";
 
 // Predefined mock data for rapid implementation
@@ -31,17 +32,29 @@ const SUBJECTS = [
   { id: "sub4", name: "Conversational Fluency" },
 ];
 
-const PEDAGOGICAL_TAGS = [
-  "Strong Grammar",
-  "Used Target Vocabulary",
-  "Active Participation",
-  "Superb Paragraph Structure",
-  "Pronunciation Flow",
-  "Creative Ideas",
-  "Needs Volume Practice",
-  "Refining Spelling",
-  "Excellent Comprehension",
-  "Logical Organization",
+// 1. Grouped pedagogical tags for streamlined cognitive load
+interface TagCategory {
+  categoryName: string;
+  tags: string[];
+}
+
+const PEDAGOGICAL_TAG_GROUPS: TagCategory[] = [
+  {
+    categoryName: "LITERACY & ACCURATE GRAMMAR",
+    tags: ["Strong Grammar", "Superb Paragraph Structure", "Refining Spelling", "Logical Organization"],
+  },
+  {
+    categoryName: "FLUENCY & ARTICULATION",
+    tags: ["Pronunciation Flow", "Conversational Fluency", "Articulation & Pace"],
+  },
+  {
+    categoryName: "ENGAGEMENT & ENDEAVOR",
+    tags: ["Active Participation", "Creative Ideas", "Consistent Effort", "Collaborative Attitude"],
+  },
+  {
+    categoryName: "COMPREHENSION & VOCABULARY",
+    tags: ["Used Target Vocabulary", "Excellent Comprehension", "Contextual Vocabulary", "Critical Thinking"],
+  },
 ];
 
 interface GeneratedArtifact {
@@ -61,40 +74,69 @@ export const TeacherUploadDashboard: React.FC = () => {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
 
-  // --- Interaction / Loading States ---
+  // --- Interaction & Simulated Upload States ---
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStep, setSubmitStep] = useState(0); // 0: Idle, 1: Validating, 2: AI Generating, 3: rendering PDF
   const [isDragging, setIsDragging] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   
-  // --- Result State ---
+  // --- Result State & Reader Modal ---
   const [generatedArtifact, setGeneratedArtifact] = useState<GeneratedArtifact | null>(null);
+  const [isReadMoreOpen, setIsReadMoreOpen] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // --- Handler Functions ---
+  // --- Tag Selection Limit Rules (Maximum of 3-4 selected tags) ---
+  const MAX_TAG_LIMIT = 4;
+
   const handleTagToggle = (tag: string) => {
     setErrorMsg(null);
     if (selectedTags.includes(tag)) {
       setSelectedTags(selectedTags.filter((t) => t !== tag));
     } else {
-      if (selectedTags.length >= 3) {
-        setErrorMsg("You can select a maximum of 3 performance tags to focus key metrics.");
+      if (selectedTags.length >= MAX_TAG_LIMIT) {
+        setErrorMsg(`You can select a maximum of ${MAX_TAG_LIMIT} achievement tags to prevent crowded PDF layouts.`);
         return;
       }
       setSelectedTags([...selectedTags, tag]);
     }
   };
 
+  // --- Simulated Uploading State for visual feedback resembling UploadThing ---
   const handleFileChange = (file: File) => {
     setErrorMsg(null);
     if (!file.type.startsWith("image/")) {
       setErrorMsg("Please upload a valid image file representing the student's handwritten work.");
       return;
     }
-    setUploadedFile(file);
-    const url = URL.createObjectURL(file);
-    setFilePreviewUrl(url);
+
+    setIsUploadingImage(true);
+    setUploadProgress(5);
+
+    // Increment progress bar to mimic active server communication
+    const progressInterval = setInterval(() => {
+      setUploadProgress((prev) => {
+        if (prev >= 90) {
+          clearInterval(progressInterval);
+          return 90;
+        }
+        return prev + 15;
+      });
+    }, 120);
+
+    setTimeout(() => {
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+      setTimeout(() => {
+        setUploadedFile(file);
+        const url = URL.createObjectURL(file);
+        setFilePreviewUrl(url);
+        setIsUploadingImage(false);
+        setUploadProgress(0);
+      }, 200);
+    }, 1000);
   };
 
   const onDragOver = (e: React.DragEvent) => {
@@ -128,6 +170,7 @@ export const TeacherUploadDashboard: React.FC = () => {
     setGeneratedArtifact(null);
     setErrorMsg(null);
     setSubmitStep(0);
+    setIsReadMoreOpen(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -161,12 +204,10 @@ export const TeacherUploadDashboard: React.FC = () => {
     setSubmitStep(1); // Stage 1: Validating payload
 
     try {
-      // Simulate modern async server state progression pipeline
       await new Promise((resolve) => setTimeout(resolve, 800));
       
       setSubmitStep(2); // Stage 2: Prompting Google Gemini AI Model
       
-      // Hit real API or trigger real Server Action matching schema
       const response = await fetch("/api/reports/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -183,9 +224,8 @@ export const TeacherUploadDashboard: React.FC = () => {
         const payload = await response.json();
         responseText = payload.reflection;
       } else {
-        // Safe robust client fallback if route doesn't exist yet/fails
         const tagsJoined = selectedTags.join(", ").toLowerCase();
-        responseText = `${student.englishName} demonstrated highly encouraging performance during today's activities in ${subject.name}, directly executing skills related to ${tagsJoined}. We will continue reinforcing core concepts to elevate accuracy in these designated zones.`;
+        responseText = `${student.englishName} demonstrated highly encouraging progress under the ${subject.name} curriculum, focusing directly on milestones in ${tagsJoined}. We will maintain customized instruction sequences to further expand this foundational growth.`;
       }
 
       await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -201,13 +241,20 @@ export const TeacherUploadDashboard: React.FC = () => {
         imageUrl: filePreviewUrl || "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=400",
       });
 
-    } catch (e: any) {
-      console.error(e);
+    } catch (err: any) {
+      console.error(err);
       setErrorMsg("An unexpected server-side error occurred. AI generation was bypassed with safe default guidelines.");
     } finally {
       setIsSubmitting(false);
       setSubmitStep(0);
     }
+  };
+
+  // Safe truncation configuration
+  const shouldTruncate = (text: string) => text.length > 180;
+  const getTruncatedText = (text: string) => {
+    if (!shouldTruncate(text)) return text;
+    return text.substring(0, 170) + "...";
   };
 
   return (
@@ -304,13 +351,27 @@ export const TeacherUploadDashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Drag-and-Drop Image File Upload Area */}
+              {/* Robust Drag-and-Drop Image File Upload Area with Active Progress */}
               <div>
                 <label className="block text-xs font-bold text-stone-500 uppercase tracking-widest mb-1.5">
                   Worksheet Proof Photo
                 </label>
                 
-                {!filePreviewUrl ? (
+                {isUploadingImage ? (
+                  <div className="border border-stone-200 rounded-sm p-8 text-center bg-stone-50">
+                    <Loader2 className="w-6 h-6 mx-auto text-[#2A435D] animate-spin mb-3" />
+                    <p className="text-xs font-semibold text-stone-700">Uploading Worksheets to Storage...</p>
+                    <div className="w-48 bg-stone-200 h-1.5 rounded-full mx-auto mt-3 overflow-hidden">
+                      <div 
+                        className="bg-[#2A435D] h-full transition-all duration-150" 
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
+                    <span className="text-[10px] font-mono text-stone-500 mt-1 block">
+                      {uploadProgress}% Complete
+                    </span>
+                  </div>
+                ) : !filePreviewUrl ? (
                   <div
                     onDragOver={onDragOver}
                     onDragLeave={onDragLeave}
@@ -360,36 +421,49 @@ export const TeacherUploadDashboard: React.FC = () => {
                 )}
               </div>
 
-              {/* Pedagogical Grid Tag Selectors */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-xs font-bold text-stone-500 uppercase tracking-widest">
-                    Pedagogical Performance Tags
-                  </label>
-                  <span className="text-[10px] text-stone-400 font-mono font-medium">
-                    {selectedTags.length} of 3 selected
+              {/* Grouped Category Pedagogical Tags selection view */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between border-b border-stone-100 pb-2">
+                  <span className="block text-xs font-bold text-stone-500 uppercase tracking-widest">
+                    Pedagogical Metric Tags
+                  </span>
+                  <span className="text-[10px] text-stone-500 bg-stone-100 px-2 py-0.5 rounded-full font-mono font-medium">
+                    {selectedTags.length} of {MAX_TAG_LIMIT} selected
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                  {PEDAGOGICAL_TAGS.map((tag) => {
-                    const isSelected = selectedTags.includes(tag);
-                    return (
-                      <button
-                        key={tag}
-                        type="button"
-                        onClick={() => handleTagToggle(tag)}
-                        className={`text-[11px] p-2 text-left rounded-sm border transition-all cursor-pointer flex items-center justify-between ${
-                          isSelected
-                            ? "bg-[#2A435D] text-white border-[#2A435D]"
-                            : "bg-white border-stone-200 text-stone-600 hover:bg-stone-50"
-                        }`}
-                      >
-                        <span className="truncate">{tag}</span>
-                        {isSelected && <Check className="w-3 h-3 text-white shrink-0 ml-1" />}
-                      </button>
-                    );
-                  })}
+                <div className="space-y-4 max-h-80 overflow-y-auto pr-1">
+                  {PEDAGOGICAL_TAG_GROUPS.map((group) => (
+                    <div key={group.categoryName} className="space-y-1.5">
+                      <span className="block text-[9px] font-bold text-[#2A435D] tracking-wider uppercase">
+                        {group.categoryName}
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {group.tags.map((tag) => {
+                          const isSelected = selectedTags.includes(tag);
+                          return (
+                            <button
+                              key={tag}
+                              type="button"
+                              onClick={() => handleTagToggle(tag)}
+                              className={`text-[10px] py-1 px-2.5 rounded-full border transition-all cursor-pointer flex items-center gap-1 font-semibold ${
+                                isSelected
+                                  ? "bg-[#2A435D] text-white border-[#2A435D]"
+                                  : "bg-stone-50 border-stone-200 text-stone-600 hover:bg-stone-100"
+                              }`}
+                            >
+                              <span>{tag}</span>
+                              {isSelected ? (
+                                <Check className="w-3 h-3 text-white shrink-0" />
+                              ) : (
+                                <span className="text-stone-300 font-normal">+</span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
 
@@ -427,9 +501,9 @@ export const TeacherUploadDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Right Side: Live visual Preview of generated narrative commentary card and simulated metadata */}
-        <div className="lg:col-span-5 flex flex-col justify-between">
-          <div className="h-full bg-white border border-black/5 rounded-md p-6 shadow-xs flex flex-col justify-between min-h-[420px]">
+        {/* Right Side: Preview preserving uniform height bounds and layout shifts to prevent ugly visual distortion */}
+        <div className="lg:col-span-5 flex flex-col h-full justify-between">
+          <div className="h-full bg-white border border-black/5 rounded-md p-6 shadow-xs flex flex-col justify-between min-h-[500px]">
             <div>
               <div className="flex items-center justify-between border-b border-black/5 pb-3 mb-4">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400">
@@ -442,7 +516,7 @@ export const TeacherUploadDashboard: React.FC = () => {
               </div>
 
               {generatedArtifact ? (
-                <div className="space-y-5" id="generated-preview-plate">
+                <div className="space-y-4" id="generated-preview-plate">
                   
                   {/* Basic Metadata Info */}
                   <div className="space-y-1">
@@ -454,8 +528,8 @@ export const TeacherUploadDashboard: React.FC = () => {
                     </h3>
                   </div>
 
-                  {/* Worksheet Image thumbnail */}
-                  <div className="relative aspect-video rounded-sm overflow-hidden border border-black/5 bg-[#FAF9F6]">
+                  {/* Worksheet Image thumbnail with fixed aspect ratio sizing to avoid layout jumps */}
+                  <div className="relative aspect-[16/10] rounded-sm overflow-hidden border border-black/5 bg-[#FAF9F6] h-40">
                     <img
                       src={generatedArtifact.imageUrl}
                       alt="Student worksheet proof"
@@ -471,26 +545,38 @@ export const TeacherUploadDashboard: React.FC = () => {
                     {generatedArtifact.tags.map((tag) => (
                       <span
                         key={tag}
-                        className="text-[9px] font-bold font-sans text-stone-500 bg-[#FAF9F6] border border-black/5 py-0.5 px-2 rounded-sm uppercase tracking-wider"
+                        className="text-[9px] font-bold font-sans text-stone-550 bg-[#FAF9F6] border border-black/5 py-0.5 px-2 rounded-sm uppercase tracking-wider"
                       >
                         {tag}
                       </span>
                     ))}
                   </div>
 
-                  {/* AI Narrative Commentary Output text wrapper */}
-                  <div className="bg-[#FAF9F6] border border-black/5 p-4 rounded-sm space-y-1">
-                    <span className="text-[8px] font-bold text-[#2A435D] uppercase tracking-widest uppercase">
-                      AI Synthesized Teacher Comment (2-Sentence Spec)
-                    </span>
-                    <p className="text-[11px] leading-relaxed text-stone-700 italic">
-                      "{generatedArtifact.reflection}"
-                    </p>
+                  {/* AI Narrative Card - Applied uniform height constraints and overflow bounds */}
+                  <div className="bg-[#FAF9F6] border border-black/5 p-4 rounded-sm min-h-[140px] flex flex-col justify-between">
+                    <div className="space-y-1">
+                      <span className="text-[8px] font-bold text-[#2A435D] uppercase tracking-widest block">
+                        AI Synthesized Teacher Comment (2-Sentence Spec)
+                      </span>
+                      <p className="text-[11px] leading-relaxed text-stone-700 italic">
+                        "{getTruncatedText(generatedArtifact.reflection)}"
+                      </p>
+                    </div>
+
+                    {shouldTruncate(generatedArtifact.reflection) && (
+                      <button
+                        type="button"
+                        onClick={() => setIsReadMoreOpen(true)}
+                        className="text-[10px] text-[#2A435D] font-bold hover:underline mt-2 self-start cursor-pointer"
+                      >
+                        Read Full Insight &rarr;
+                      </button>
+                    )}
                   </div>
 
                 </div>
               ) : (
-                <div className="flex-1 flex flex-col items-center justify-center text-center py-20 text-stone-400">
+                <div className="flex-1 flex flex-col items-center justify-center text-center py-24 text-stone-400">
                   <FileText className="w-12 h-12 stroke-1 text-stone-300 mb-3" />
                   <p className="text-xs font-semibold text-stone-500">
                     No active synthesis compiled
@@ -523,6 +609,98 @@ export const TeacherUploadDashboard: React.FC = () => {
         </div>
 
       </div>
+
+      {/* Modern, lightweight Read More Modal to support rich previews without layout shifts */}
+      {isReadMoreOpen && generatedArtifact && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-xs transition-opacity duration-200">
+          <div className="bg-white border border-stone-200 w-full max-w-lg rounded-md overflow-hidden shadow-xl animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between px-5 py-4 bg-stone-50 border-b border-stone-100">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-[#2A435D]" />
+                <span className="text-[10px] font-bold uppercase tracking-widest text-[#2A435D]">
+                  Complete Teacher insight
+                </span>
+              </div>
+              <button
+                onClick={() => setIsReadMoreOpen(false)}
+                className="text-stone-400 hover:text-stone-700 p-1 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <div className="space-y-1">
+                <span className="text-[8px] font-bold text-stone-400 uppercase tracking-wider block">
+                  Student & Subject Context
+                </span>
+                <p className="text-xs font-semibold text-stone-800">
+                  {generatedArtifact.studentName} &mdash; {generatedArtifact.subjectName}
+                </p>
+              </div>
+
+              <div className="space-y-1 bg-[#FAF9F6] border border-black/5 p-4 rounded-sm">
+                <span className="text-[8px] font-bold text-[#2A435D] uppercase tracking-wider block mb-2">
+                  Complete Generated Paragraph
+                </span>
+                <p className="text-xs leading-relaxed text-stone-700 italic">
+                  "{generatedArtifact.reflection}"
+                </p>
+              </div>
+
+              <div className="flex justify-between items-center text-[10px] text-stone-400 font-mono pt-2">
+                <span>Character Count: {generatedArtifact.reflection.length}</span>
+                <span>Limit Target: 2 sentences (~45 words)</span>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 px-5 py-3 bg-stone-50 border-t border-stone-100">
+              <button
+                type="button"
+                onClick={() => setIsReadMoreOpen(false)}
+                className="px-4 py-2 bg-stone-200 hover:bg-stone-300 text-stone-750 text-[10px] uppercase font-bold tracking-wider rounded-sm transition-colors cursor-pointer"
+              >
+                Dismiss View
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Next.js SSR Integration Documentation Block */}
+      <div className="mt-12 bg-stone-50 border border-stone-200 rounded-md p-6">
+        <h4 className="text-xs font-bold text-[#2A435D] uppercase tracking-widest mb-2 flex items-center gap-1.5">
+          <FileText className="w-4 h-4 text-[#2A435D]" /> Next.js App Router SSR Integration Guidelines
+        </h4>
+        <p className="text-xs leading-relaxed text-stone-600">
+          Because packages like <code className="font-mono text-pink-600 bg-pink-50 px-1 rounded">@react-pdf/renderer</code> rely heavily on native browser-only dependencies (e.g., canvas elements, window objects, blob constructors), rendering them directly on the server during Next.js server-side renders causes compilation crashes.
+        </p>
+        <p className="text-xs leading-relaxed text-stone-600 mt-2">
+          To safely bypass compiler exceptions, you must combine the client directive with Next.js dynamic imports, forcing lazy reference resolution on the client browser space only:
+        </p>
+        <pre className="font-mono text-[10px] text-stone-700 bg-white border border-stone-200 p-3.5 rounded-sm mt-3 overflow-x-auto leading-relaxed">
+{`"use client";
+
+import dynamic from "next/dynamic";
+
+// Dynamic Client-Only Import to completely disable SSR compilation
+const PDFDownloadButton = dynamic(
+  () => import("@react-pdf/renderer").then((m) => m.PDFDownloadLink),
+  { ssr: false }
+);
+
+export default function MyPage() {
+  return (
+    <div>
+      <PDFDownloadButton document={<MonthlyDiaryPDF reportData={...} />} fileName="report.pdf">
+        {({ loading }) => (loading ? "Generating Doc..." : "Download Report")}
+      </PDFDownloadButton>
+    </div>
+  );
+}`}
+        </pre>
+      </div>
+
     </div>
   );
 };
