@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from "react";
 import { WhiteLabelSchool, StudentProfile, SubjectModule, ArtifactItem, Language, translations } from "../types";
 import { ChevronLeft, ChevronRight, FileText, Layout, Award, Settings, CheckCircle, Download } from "lucide-react";
-import { PDFDownloadLink } from "@react-pdf/renderer";
-import { MonthlyDiaryDocument } from "./pdf/MonthlyDiaryDocument";
+
+const LazyPDFLink = React.lazy(() => import("./pdf/LazyPDFLink"));
 
 interface PortfolioMockPdfProps {
   school: WhiteLabelSchool;
@@ -23,6 +23,7 @@ export const PortfolioMockPdf: React.FC<PortfolioMockPdfProps> = ({
   const [activePageIndex, setActivePageIndex] = useState<number>(0);
   const [isMounted, setIsMounted] = useState<boolean>(false);
   const [isEcoMode, setIsEcoMode] = useState<boolean>(false);
+  const [pdfRequested, setPdfRequested] = useState<boolean>(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -114,23 +115,41 @@ export const PortfolioMockPdf: React.FC<PortfolioMockPdfProps> = ({
           {/* Dynamic PDF Generation & Export Link */}
           {isMounted ? (
             <div className="flex items-center gap-2">
-              <PDFDownloadLink
-                document={<MonthlyDiaryDocument reportData={reportData} isEcoMode={isEcoMode} />}
-                fileName={`${student.englishName.replace(/[^a-zA-Z0-9]/g, "_")}_Monthly_Diary.pdf`}
-              >
-                {({ loading }) => (
-                  <button
-                    disabled={loading}
-                    className="flex items-center gap-1.5 py-1.5 px-3 text-[10px] font-bold text-white uppercase tracking-wider rounded-sm shadow-xs cursor-pointer hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-50"
-                    style={{ backgroundColor: school.brandColor }}
-                    id="pdf-download-harness-btn"
-                  >
-                    <Download className="w-3 h-3 text-white shrink-0" />
-                    <span>{loading ? "Compiling PDF..." : translations[language].downloadBtn}</span>
-                  </button>
-                )}
-              </PDFDownloadLink>
-
+              {pdfRequested ? (
+                <React.Suspense
+                  fallback={
+                    <button
+                      disabled
+                      className="flex items-center gap-1.5 py-1.5 px-3 text-[10px] font-bold text-white uppercase tracking-wider rounded-sm/50 opacity-90 transition-all cursor-wait"
+                      style={{ backgroundColor: school.brandColor }}
+                      id="pdf-loading-fallback-btn"
+                    >
+                      <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin shrink-0" />
+                      <span>Loading Engine...</span>
+                    </button>
+                  }
+                >
+                  <LazyPDFLink
+                    reportData={reportData}
+                    isEcoMode={isEcoMode}
+                    school={school}
+                    student={student}
+                    language={language}
+                    translations={translations}
+                  />
+                </React.Suspense>
+              ) : (
+                <button
+                  onClick={() => setPdfRequested(true)}
+                  className="flex items-center gap-1.5 py-1.5 px-3 text-[10px] font-bold text-white uppercase tracking-wider rounded-sm shadow-xs cursor-pointer hover:brightness-110 active:scale-[0.98] transition-all"
+                  style={{ backgroundColor: school.brandColor }}
+                  id="pdf-load-trigger-btn"
+                >
+                  <Download className="w-3 h-3 text-white shrink-0" />
+                  <span>{translations[language]?.downloadBtn || "Download PDF"}</span>
+                </button>
+              )}
+ 
               {/* KakaoTalk Mockup Button */}
               <button
                 type="button"

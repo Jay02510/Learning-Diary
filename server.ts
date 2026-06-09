@@ -179,6 +179,41 @@ async function startServer() {
     }
   });
 
+  // ==================== CORS IMAGE PROXY ENABLER ====================
+  // Bypasses the #1 reason PDFs fail client-side: remote image CORS restrictions.
+  // Downloads the remote resource server-side and streams it with local headers.
+  app.get("/api/proxy/image", async (req, res) => {
+    try {
+      const imageUrl = req.query.url as string;
+      if (!imageUrl) {
+        return res.status(400).json({ error: "Missing required 'url' parameter" });
+      }
+
+      // Check for security / valid pattern
+      if (!imageUrl.startsWith("http://") && !imageUrl.startsWith("https://")) {
+        return res.status(400).json({ error: "Invalid image URL protocol" });
+      }
+
+      console.log(`[ImageProxy] Fetching remote image for CORS bypass: ${imageUrl}`);
+      const imageResponse = await fetch(imageUrl);
+      if (!imageResponse.ok) {
+        return res.status(imageResponse.status).json({ error: "Failed to fetch remote image source" });
+      }
+
+      const contentType = imageResponse.headers.get("Content-Type") || "image/jpeg";
+      res.setHeader("Content-Type", contentType);
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.setHeader("Cache-Control", "public, max-age=86400"); // Cache for 1 day
+
+      const arrayBuffer = await imageResponse.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      return res.send(buffer);
+    } catch (err: any) {
+      console.error("[ImageProxy] Critical error serving remote image:", err);
+      return res.status(500).json({ error: "Image proxy fetch failed", details: err.message });
+    }
+  });
+
   // ==================== APP DEV AND STATIC STORAGE RESOLVERS ====================
   if (!isProduction) {
     const vite = await createViteServer({

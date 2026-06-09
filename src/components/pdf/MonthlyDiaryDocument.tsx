@@ -15,7 +15,7 @@ import {
 const fontOrigin = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
 Font.register({
   family: "Noto Sans KR",
-  src: `${fontOrigin}/api/font/noto-sans-kr.ttf`,
+  src: `${fontOrigin}/font/noto-sans-kr.ttf`,
 });
 
 // TypeScript interfaces for the report data prop
@@ -490,6 +490,12 @@ export const MonthlyDiaryDocument: React.FC<MonthlyDiaryDocumentProps> = ({
               artifact.imageUrl.startsWith("https://") ||
               artifact.imageUrl.startsWith("data:image/"));
 
+          const sourceUrl = hasImage
+            ? (artifact.imageUrl.startsWith("data:")
+                ? artifact.imageUrl
+                : `${fontOrigin}/api/proxy/image?url=${encodeURIComponent(artifact.imageUrl)}`)
+            : "";
+
           return (
             <Page key={index} size="A4" style={styles.pageLayout}>
               {/* Branded Running Header Stamp */}
@@ -519,7 +525,7 @@ export const MonthlyDiaryDocument: React.FC<MonthlyDiaryDocumentProps> = ({
                   {hasImage ? (
                     <View style={styles.imageOuterFrame}>
                       <Image
-                        src={artifact.imageUrl}
+                        src={sourceUrl}
                         style={styles.imageComponent}
                       />
                     </View>
