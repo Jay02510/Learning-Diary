@@ -41,19 +41,20 @@ export interface MonthlyDiaryReportData {
 
 interface MonthlyDiaryDocumentProps {
   reportData: MonthlyDiaryReportData;
+  isEcoMode?: boolean;
 }
 
 /**
  * Creates dynamic styles programmatically aligned with the school's brand design,
  * styling every text node with 'Noto Sans KR' to support Hangul.
  */
-const createStyles = (brandColor: string) => {
+const createStyles = (brandColor: string, isEcoMode?: boolean) => {
   const safeBrandColor = brandColor || "#2A435D";
   return StyleSheet.create({
     // Page common structure with neutral border accents
     pageLayout: {
       flexDirection: "column",
-      backgroundColor: "#FAF9F6", // Soft warm off-white (editorial style)
+      backgroundColor: isEcoMode ? "#FFFFFF" : "#FAF9F6", // Pure white for Eco mode, otherwise soft warm off-white (editorial style)
       padding: 36,
       fontFamily: "Noto Sans KR",
       height: "100%",
@@ -65,9 +66,9 @@ const createStyles = (brandColor: string) => {
       padding: 48,
       height: "100%",
       fontFamily: "Noto Sans KR",
-      borderTopWidth: 8,
+      borderTopWidth: isEcoMode ? 1 : 8,
       borderTopColor: safeBrandColor,
-      borderBottomWidth: 8,
+      borderBottomWidth: isEcoMode ? 1 : 8,
       borderBottomColor: safeBrandColor,
     },
     coverHeader: {
@@ -97,8 +98,10 @@ const createStyles = (brandColor: string) => {
     coverBadge: {
       fontSize: 8,
       fontFamily: "Noto Sans KR",
-      color: "#FFFFFF",
-      backgroundColor: safeBrandColor,
+      color: isEcoMode ? safeBrandColor : "#FFFFFF",
+      backgroundColor: isEcoMode ? "#FFFFFF" : safeBrandColor,
+      borderWidth: isEcoMode ? 1 : 0,
+      borderColor: isEcoMode ? safeBrandColor : "transparent",
       paddingHorizontal: 12,
       paddingVertical: 5,
       borderRadius: 2,
@@ -129,12 +132,14 @@ const createStyles = (brandColor: string) => {
       marginTop: 20,
     },
     coverStudentContainer: {
-      backgroundColor: "#FAF9F6",
-      borderLeftWidth: 3,
+      backgroundColor: isEcoMode ? "#FFFFFF" : "#FAF9F6",
+      borderLeftWidth: isEcoMode ? 1 : 3,
       borderLeftColor: safeBrandColor,
       padding: 16,
       borderRadius: 2,
       marginVertical: 40,
+      borderWidth: isEcoMode ? 1 : 0,
+      borderColor: isEcoMode ? "#E5E7EB" : "transparent",
     },
     coverStudentRow: {
       flexDirection: "row",
@@ -197,7 +202,7 @@ const createStyles = (brandColor: string) => {
       justifyContent: "space-between",
       alignItems: "center",
       backgroundColor: "#FFFFFF",
-      borderLeftWidth: 4,
+      borderLeftWidth: isEcoMode ? 1 : 4,
       borderLeftColor: safeBrandColor,
       paddingHorizontal: 12,
       paddingVertical: 8,
@@ -320,7 +325,7 @@ const createStyles = (brandColor: string) => {
     },
     reflectionWorkspace: {
       backgroundColor: "#FFFFFF",
-      borderLeftWidth: 3,
+      borderLeftWidth: isEcoMode ? 1 : 3,
       borderLeftColor: safeBrandColor,
       padding: 14,
       borderRadius: 2,
@@ -417,9 +422,10 @@ const createStyles = (brandColor: string) => {
  */
 export const MonthlyDiaryDocument: React.FC<MonthlyDiaryDocumentProps> = ({
   reportData,
+  isEcoMode = false,
 }) => {
   const { school, student, targetMonth, artifacts } = reportData;
-  const styles = createStyles(school.brandColor);
+  const styles = createStyles(school.brandColor, isEcoMode);
 
   // Filter out any invalid artifacts to respect "INTELLIGENT SKIPPING" requirement
   const validArtifacts = (artifacts || []).filter((item) => {
@@ -546,7 +552,7 @@ export const MonthlyDiaryDocument: React.FC<MonthlyDiaryDocumentProps> = ({
                         ))
                       ) : (
                         <Text style={styles.tagItem}>
-                          General Target Objectives
+                          General Core Skills
                         </Text>
                       )}
                     </View>
@@ -555,7 +561,7 @@ export const MonthlyDiaryDocument: React.FC<MonthlyDiaryDocumentProps> = ({
                   {/* Programmatic brand-colored text box background for reflection */}
                   <View style={styles.reflectionWorkspace}>
                     <Text style={styles.reflectionHeader}>
-                      Academic Director Reflection
+                      Teacher's Commentary
                     </Text>
                     <Text style={styles.reflectionTextContent}>
                       {artifact.ai_reflection ||

@@ -73,3 +73,32 @@ export interface MonthlyReportPreview {
     oralConfidence: number;
   };
 }
+
+export const translations = {
+  en: {
+    dashboardTitle: "Learning Diary Hub",
+    selectStudent: "Select Student",
+    selectSubject: "Select Subject",
+    uploadWork: "Upload Student Work (Photo/Worksheet)",
+    selectTags: "Select Core Skills Focused (Max 3)",
+    generateButton: "Generate Commentary & Save",
+    loadingText: "AI Processing & Saving...",
+    downloadBtn: "Download Monthly Diary (PDF)",
+    commentaryHeader: "Teacher's Commentary Preview:",
+    academyProfile: "Academy Profile Setup"
+  },
+  ko: {
+    dashboardTitle: "러닝 다이어리 관리 센터",
+    selectStudent: "학생 선택",
+    selectSubject: "과목 선택",
+    uploadWork: "학생 작품 업로드 (활동 사진/워크시트)",
+    selectTags: "집중 학습 영역 선택 (최대 3개)",
+    generateButton: "AI 코멘트 생성 및 저장",
+    loadingText: "AI 분석 및 저장 중...",
+    downloadBtn: "월간 러닝 다이어리 다운로드 (PDF)",
+    commentaryHeader: "선생님 코멘트 미리보기:",
+    academyProfile: "학원 프로필 설정"
+  }
+};
+
+export type Language = 'en' | 'ko';

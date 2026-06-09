@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from "react";
-import { WhiteLabelSchool, StudentProfile, ArtifactItem } from "./types";
+import { WhiteLabelSchool, StudentProfile, ArtifactItem, translations, Language } from "./types";
 import { PRESET_SCHOOLS, PRESET_STUDENTS, PRESET_SUBJECTS, INITIAL_ARTIFACTS } from "./data";
 import { BrandingControl } from "./components/BrandingControl";
 import { ArtifactWorkspace } from "./components/ArtifactWorkspace";
@@ -17,6 +17,7 @@ export default function App() {
   const [selectedSchool, setSelectedSchool] = useState<WhiteLabelSchool>(PRESET_SCHOOLS[0]);
   const [selectedStudent, setSelectedStudent] = useState<StudentProfile>(PRESET_STUDENTS[0]);
   const [artifacts, setArtifacts] = useState<ArtifactItem[]>(INITIAL_ARTIFACTS);
+  const [language, setLanguage] = useState<Language>("ko");
 
   // Dynamic hander to update branding name customizer
   const handleCustomNameChange = (name: string) => {
@@ -62,8 +63,8 @@ export default function App() {
               <h2 className="font-sans uppercase tracking-[0.2em] text-[10px] font-bold text-[#2A435D] mb-0 leading-none">ESL Scholastic Network</h2>
             </div>
             <div className="flex items-baseline gap-2 mt-2">
-              <h1 className="font-serif font-light text-2xl sm:text-3xl tracking-tight text-neutral-800 mb-0" id="app-logo-title">
-                Monthly Progress Portfolio
+              <h1 className="font-serif font-light text-2xl sm:text-3xl tracking-tight text-neutral-800 mb-0 animate-fadeIn" id="app-logo-title">
+                {translations[language].dashboardTitle}
               </h1>
               <span className="text-[9px] bg-[#2A435D]/5 text-[#2A435D] font-mono font-bold px-2 py-0.5 rounded-sm border border-[#2A435D]/10">
                 Tenant Portal
@@ -74,13 +75,23 @@ export default function App() {
             </p>
           </div>
 
-          {/* Active Configuration metadata stamps */}
-          <div className="flex flex-wrap gap-2 items-center" id="header-stamps-group">
-            <div className="flex items-center gap-1.5 px-3 py-1 bg-[#FAF9F6] border border-black/5 rounded-sm text-xs text-[#1C1C1C]">
+          {/* Active Configuration metadata stamps & Language Switcher */}
+          <div className="flex flex-wrap gap-2.5 items-center" id="header-stamps-group">
+            {/* Sleek Bilingual Toggle Switcher */}
+            <button
+              onClick={() => setLanguage(language === "en" ? "ko" : "en")}
+              className="px-3 py-1.5 border border-black/10 rounded-sm bg-white font-sans font-medium text-xs text-stone-600 hover:bg-stone-50 transition-colors shadow-xs shrink-0 cursor-pointer flex items-center gap-1.5"
+              id="language-switcher-toggle"
+            >
+              <span>🌐</span>
+              <span>{language === "en" ? "한국어로 보기" : "Switch to English"}</span>
+            </button>
+
+            <div className="flex items-center gap-1.5 px-3 py-2 bg-[#FAF9F6] border border-black/5 rounded-sm text-xs text-[#1C1C1C]">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-650 animate-pulse" />
               <span className="font-sans font-medium text-stone-600">Server Proxy Active</span>
             </div>
-            <div className="flex items-center gap-1.5 px-3 py-1 bg-[#2A435D]/5 border border-[#2A435D]/10 rounded-sm text-xs text-[#2A435D]">
+            <div className="flex items-center gap-1.5 px-3 py-2 bg-[#2A435D]/5 border border-[#2A435D]/10 rounded-sm text-xs text-[#2A435D]">
               <Sparkles className="w-3.5 h-3.5 text-[#2A435D]" />
               <span className="font-sans font-semibold">Gemini Elite v1.5</span>
             </div>
@@ -98,6 +109,7 @@ export default function App() {
             onSchoolChange={setSelectedSchool}
             onCustomColorChange={handleCustomColorChange}
             onCustomNameChange={handleCustomNameChange}
+            language={language}
           />
 
           {/* Live system telemetry card */}
@@ -144,6 +156,7 @@ export default function App() {
             imageUrl="https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&q=80&w=600"
             selectedTags={["Word Associations", "Segmenting Drills", "Consonant Diagraphs"]}
             targetMonth="2026-06"
+            language={language}
           />
         </section>
 
@@ -158,6 +171,7 @@ export default function App() {
             onAddArtifact={handleAddArtifact}
             onUpdateArtifact={handleUpdateArtifact}
             brandColor={selectedSchool.brandColor}
+            language={language}
           />
 
           {/* Double column layout at bottom: Live Portrait preview & relational blueprints */}
@@ -166,13 +180,14 @@ export default function App() {
             <div id="mock-preview-panel">
               <h3 className="font-sans font-bold text-stone-500 text-[10px] uppercase tracking-[0.2em] mb-3 flex items-center gap-1.5">
                 <FileText className="w-4 h-4 text-[#2A435D]" />
-                Live White-Label Preview Card
+                Live Academy Preview Card
               </h3>
               <PortfolioMockPdf
                 school={selectedSchool}
                 student={selectedStudent}
                 subjects={PRESET_SUBJECTS}
                 artifacts={artifacts}
+                language={language}
               />
             </div>
 
@@ -199,7 +214,7 @@ export default function App() {
             <span>•</span>
             <span>Parent Portfolio Generation Engine Active</span>
             <span>•</span>
-            <span>White-Label Tenant Mapping OK</span>
+            <span>Academy Profile Mapping OK</span>
           </div>
         </div>
       </footer>

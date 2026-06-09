@@ -1,6 +1,6 @@
 // src/components/ArtifactWorkspace.tsx
 import React, { useState } from "react";
-import { StudentProfile, SubjectModule, ArtifactItem } from "../types";
+import { StudentProfile, SubjectModule, ArtifactItem, Language, translations } from "../types";
 import { PRESET_STUDENTS, PRESET_SUBJECTS } from "../data";
 import { PlusCircle, Sparkles, Image as ImageIcon, CheckCircle, Tag, Loader2, ArrowRight, Zap, X, Upload, RotateCcw, FolderOpen } from "lucide-react";
 import { useReflection } from "../hooks/useReflection";
@@ -13,6 +13,7 @@ interface ArtifactWorkspaceProps {
   onAddArtifact: (artifact: ArtifactItem) => void;
   onUpdateArtifact: (id: string, updated: Partial<ArtifactItem>) => void;
   brandColor: string;
+  language: Language;
 }
 
 export const ArtifactWorkspace: React.FC<ArtifactWorkspaceProps> = ({
@@ -23,6 +24,7 @@ export const ArtifactWorkspace: React.FC<ArtifactWorkspaceProps> = ({
   onAddArtifact,
   onUpdateArtifact,
   brandColor,
+  language,
 }) => {
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>("sub-phonics");
   
@@ -208,7 +210,7 @@ export const ArtifactWorkspace: React.FC<ArtifactWorkspaceProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-black/5 gap-4 mb-5" id="workspace-student-selector">
         <div>
           <label className="block text-[9px] font-bold text-stone-400 uppercase tracking-widest leading-none mb-1">
-            Active Student File
+            {translations[language].selectStudent}
           </label>
           <div className="flex items-center gap-2 mt-1">
             <span className="font-serif font-medium text-stone-850 text-xl leading-tight">{currentStudent.englishName}</span>
@@ -236,7 +238,7 @@ export const ArtifactWorkspace: React.FC<ArtifactWorkspaceProps> = ({
       {/* Subject Select Stream Tabs */}
       <div id="subject-tab-headers">
         <label className="block text-[9px] font-bold text-stone-400 uppercase tracking-widest mb-2.5">
-          Pedagogical Streams
+          {translations[language].selectSubject}
         </label>
         <div className="flex flex-wrap gap-1 border-b border-black/5 pb-2 mb-5" id="subject-tabs-container">
           {subjects.map((sub) => {
@@ -271,7 +273,7 @@ export const ArtifactWorkspace: React.FC<ArtifactWorkspaceProps> = ({
       <div className="space-y-4" id="subject-artifacts-workspace">
         <div className="flex items-center justify-between">
           <h3 className="font-serif text-stone-850 text-sm font-medium leading-none mb-0">
-            Active Artifacts for {activeSubject.name} <span className="font-mono font-medium text-stone-400">({activeSubjectArtifacts.length})</span>
+            Student Work / Portfolio Activity (학생 작품 / 활동 사진) for {activeSubject.name} <span className="font-mono font-medium text-stone-400">({activeSubjectArtifacts.length})</span>
           </h3>
           {activeSubjectArtifacts.length === 0 && (
             <span className="text-[10px] bg-red-50 text-red-600 px-2.5 py-0.5 rounded-sm border border-red-100 font-semibold uppercase tracking-wider">
@@ -293,7 +295,7 @@ export const ArtifactWorkspace: React.FC<ArtifactWorkspaceProps> = ({
                 <div className="md:col-span-3 aspect-video md:aspect-square relative rounded-md border border-black/5 overflow-hidden bg-slate-100 self-start">
                   <img referrerPolicy="no-referrer" src={artifact.imageUrl} alt={artifact.imageAlt} className="absolute inset-0 w-full h-full object-cover select-none" />
                   <div className="absolute top-1.5 left-1.5 bg-[#2A435D] text-white text-[8px] font-bold tracking-widest px-2 py-0.5 rounded-sm font-sans uppercase">
-                    ANCHOR TASK
+                    MAIN LESSON ACTIVITY (주요 수업 활동)
                   </div>
                 </div>
 
@@ -334,7 +336,7 @@ export const ArtifactWorkspace: React.FC<ArtifactWorkspaceProps> = ({
                   <div>
                     <div className="flex items-center justify-between mb-1.5">
                       <span className="text-[8px] uppercase tracking-widest text-[#2A435D] font-bold flex items-center gap-1">
-                        <Sparkles className="w-2.5 h-2.5 text-[#2A435D]" /> Parent Narrative
+                        <Sparkles className="w-2.5 h-2.5 text-[#2A435D]" /> {translations[language].commentaryHeader}
                       </span>
                       {artifact.aiNarrative.startsWith("[Curriculum") || artifact.aiNarrative.includes("Working diligently") ? (
                         <span className="text-[9px] text-[#2A435D] font-bold uppercase tracking-wider">Uncompiled</span>
@@ -360,12 +362,12 @@ export const ArtifactWorkspace: React.FC<ArtifactWorkspaceProps> = ({
                       {isCurrentGen && genId === artifact.id ? (
                         <>
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          Parent Narrative compiling...
+                          Teacher's Commentary compiling...
                         </>
                       ) : (
                         <>
                           <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
-                          ✨ Generate Parent Narrative
+                          ✨ Generate Teacher's Commentary (선생님 코멘트 생성)
                         </>
                       )}
                     </button>
@@ -385,10 +387,10 @@ export const ArtifactWorkspace: React.FC<ArtifactWorkspaceProps> = ({
             
             <div className="space-y-1 max-w-md mx-auto">
               <h4 className="font-serif font-medium text-stone-800 text-sm">
-                No Artifacts in {activeSubject.name} yet
+                No Student Work (등록된 학생 작품이 없습니다)
               </h4>
               <p className="text-xs text-stone-500 leading-relaxed font-sans font-normal">
-                This progress stream is currently inactive and will be omitted from the exported PDF to protect page boundaries. Add an assessment worksheet now!
+                This progress stream is currently inactive and will be omitted from the exported PDF to protect page boundaries. Add a lesson photo or student work now!
               </p>
             </div>
 
@@ -404,7 +406,7 @@ export const ArtifactWorkspace: React.FC<ArtifactWorkspaceProps> = ({
               style={{ backgroundColor: brandColor }}
             >
               <PlusCircle className="w-4 h-4" />
-              + Upload First June Artifact
+              + Upload First Student Work (학생 작품 / 활동 사진 등록)
             </button>
           </div>
         )}
@@ -413,14 +415,14 @@ export const ArtifactWorkspace: React.FC<ArtifactWorkspaceProps> = ({
         <div className="border border-dashed border-black/10 hover:border-black/20 rounded-md p-6 bg-white space-y-4" id="add-milestone-form-section">
           <div className="flex items-center gap-2 pb-3 border-b border-black/5">
             <PlusCircle className="w-4 h-4 text-[#2A435D]" />
-            <h4 className="font-serif font-light text-stone-900 text-sm leading-none mb-0">Upload New Visual Anchor Task</h4>
+            <h4 className="font-serif font-light text-stone-900 text-sm leading-none mb-0">{translations[language].uploadWork}</h4>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-5" id="create-milestone-fields">
             {/* Choose preset educational image */}
             <div className="md:col-span-4" id="visual-selector">
               <label className="block text-[9px] font-bold text-stone-400 uppercase tracking-widest mb-1.5 flex items-center justify-between">
-                <span>Work Visual Anchor Task</span>
+                <span>Main Lesson Activity Visual (주요 수업 활동 사진)</span>
                 {newImage && (
                   <span className="text-[8px] bg-emerald-50 text-emerald-700 px-1 rounded-sm border border-emerald-100 lowercase font-mono">loaded</span>
                 )}
@@ -535,7 +537,7 @@ export const ArtifactWorkspace: React.FC<ArtifactWorkspaceProps> = ({
                       type="button"
                       id={`obs-shortcut-${idx}`}
                       onClick={() => setNewNotes(ex)}
-                      className="text-[9px] py-1 px-1.5 bg-[#FAF9F6] border border-black/5 hover:border-black/10 rounded-sm text-stone-605-600 hover:text-stone-800 truncate max-w-[120px] transition-all cursor-pointer"
+                      className="text-[9px] py-1 px-1.5 bg-[#FAF9F6] border border-black/5 hover:border-black/10 rounded-sm text-stone-600 hover:text-stone-800 truncate max-w-[120px] transition-all cursor-pointer"
                       title={ex}
                     >
                       {ex}
@@ -548,7 +550,7 @@ export const ArtifactWorkspace: React.FC<ArtifactWorkspaceProps> = ({
             {/* Objectives Tags check lists */}
             <div className="md:col-span-3 space-y-1.5" id="objectives-tags-selector">
               <label className="block text-[9px] font-bold text-stone-400 uppercase tracking-widest flex items-center justify-between">
-                <span>Objective Tags</span>
+                <span>{translations[language].selectTags}</span>
                 <span className="text-[8px] text-stone-500 lowercase font-mono">({selectedTags.length}/3 selected)</span>
               </label>
               <div className="flex flex-col gap-1 max-h-[110px] overflow-y-auto border border-black/5 p-2 bg-[#FAF9F6] rounded-md" id="objectives-checklist-box">
@@ -592,11 +594,11 @@ export const ArtifactWorkspace: React.FC<ArtifactWorkspaceProps> = ({
           <div className="flex justify-end pt-3 border-t border-black/5">
             <button
               onClick={handleCreateArtifact}
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-slate-800 hover:bg-slate-850 rounded-sm transition-all shadow-xs shrink-0 cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-slate-800 hover:bg-slate-850 rounded-sm transition-all shadow-xs shrink-0 cursor-pointer animate-fadeIn"
               style={{ backgroundColor: brandColor }}
             >
               <PlusCircle className="w-3.5 h-3.5" />
-              Save Anchor Task (Simulate Aggregate)
+              {translations[language].generateButton}
             </button>
           </div>
         </div>

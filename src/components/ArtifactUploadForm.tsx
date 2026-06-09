@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Sparkles, CheckCircle2, AlertCircle, Image as ImageIcon, Database, ArrowRight } from "lucide-react";
+import { Language, translations } from "../types";
 
 interface UploadFormProps {
   studentId: string;
@@ -8,6 +9,7 @@ interface UploadFormProps {
   imageUrl: string; // Obtained from your UploadThing response component
   selectedTags: string[];
   targetMonth: string; // e.g., "2026-06"
+  language: Language;
 }
 
 export const ArtifactUploadForm: React.FC<UploadFormProps> = ({
@@ -16,7 +18,8 @@ export const ArtifactUploadForm: React.FC<UploadFormProps> = ({
   subject,
   imageUrl,
   selectedTags,
-  targetMonth
+  targetMonth,
+  language
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [savedArtifact, setSavedArtifact] = useState<any>(null);
@@ -82,7 +85,7 @@ export const ArtifactUploadForm: React.FC<UploadFormProps> = ({
       <div className="space-y-3">
         <div className="space-y-1">
           <label className="block text-[9px] font-bold text-stone-400 uppercase tracking-widest leading-none">
-            Selected Student
+            {translations[language].selectStudent}
           </label>
           <p className="text-xs font-serif font-medium text-stone-850">{studentName}</p>
         </div>
@@ -96,7 +99,7 @@ export const ArtifactUploadForm: React.FC<UploadFormProps> = ({
           </div>
           <div className="space-y-1">
             <label className="block text-[9px] font-bold text-stone-400 uppercase tracking-widest leading-none">
-              Billing Period
+              Report Month
             </label>
             <p className="text-xs font-mono text-stone-705 font-medium">{targetMonth}</p>
           </div>
@@ -104,7 +107,7 @@ export const ArtifactUploadForm: React.FC<UploadFormProps> = ({
 
         <div className="space-y-1">
           <label className="block text-[9px] font-bold text-stone-400 uppercase tracking-widest leading-none">
-            Selected Pedagogical Objectives
+            {translations[language].selectTags}
           </label>
           <div className="flex flex-wrap gap-1 mt-1">
             {selectedTags && selectedTags.length > 0 ? (
@@ -176,12 +179,12 @@ export const ArtifactUploadForm: React.FC<UploadFormProps> = ({
         {isSubmitting ? (
           <>
             <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            AI Processing & Saving to DB...
+            {translations[language].loadingText}
           </>
         ) : (
           <>
             <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-            Generate Reflection & Commit Entry
+            {translations[language].generateButton}
           </>
         )}
       </button>

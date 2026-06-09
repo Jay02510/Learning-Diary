@@ -1,6 +1,6 @@
 // src/components/BrandingControl.tsx
 import React from "react";
-import { WhiteLabelSchool } from "../types";
+import { WhiteLabelSchool, translations, Language } from "../types";
 import { PRESET_SCHOOLS } from "../data";
 import { SwatchBook, Palette, Sparkles, Laptop } from "lucide-react";
 
@@ -9,6 +9,7 @@ interface BrandingControlProps {
   onSchoolChange: (school: WhiteLabelSchool) => void;
   onCustomColorChange: (color: string) => void;
   onCustomNameChange: (name: string) => void;
+  language: Language;
 }
 
 export const BrandingControl: React.FC<BrandingControlProps> = ({
@@ -16,6 +17,7 @@ export const BrandingControl: React.FC<BrandingControlProps> = ({
   onSchoolChange,
   onCustomColorChange,
   onCustomNameChange,
+  language,
 }) => {
   const COLOR_SWATCHES = [
     { name: "Burgundy Prep", color: "#7F1D1D" },
@@ -33,8 +35,8 @@ export const BrandingControl: React.FC<BrandingControlProps> = ({
           <SwatchBook className="w-4 h-4" id="swatch-icon" />
         </div>
         <div>
-          <h2 className="font-serif font-light text-stone-900 text-lg leading-tight" id="branding-title">1. White-Label Admin Engine</h2>
-          <p className="text-[10px] text-stone-400 font-sans uppercase tracking-wider mb-0" id="branding-subtitle">Configure hakwon-specific tenant styles</p>
+          <h2 className="font-serif font-light text-stone-900 text-lg leading-tight" id="branding-title">1. {translations[language].academyProfile}</h2>
+          <p className="text-[10px] text-stone-400 font-sans uppercase tracking-wider mb-0" id="branding-subtitle">Configure academy display name and styles</p>
         </div>
       </div>
 
