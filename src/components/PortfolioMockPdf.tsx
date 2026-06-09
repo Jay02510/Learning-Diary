@@ -1,7 +1,9 @@
 // src/components/PortfolioMockPdf.tsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { WhiteLabelSchool, StudentProfile, SubjectModule, ArtifactItem } from "../types";
-import { ChevronLeft, ChevronRight, FileText, Layout, Award, Settings, CheckCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileText, Layout, Award, Settings, CheckCircle, Download } from "lucide-react";
+import { PDFDownloadLink } from "@react-pdf/renderer";
+import { MonthlyDiaryDocument } from "./pdf/MonthlyDiaryDocument";
 
 interface PortfolioMockPdfProps {
   school: WhiteLabelSchool;
@@ -17,6 +19,33 @@ export const PortfolioMockPdf: React.FC<PortfolioMockPdfProps> = ({
   artifacts,
 }) => {
   const [activePageIndex, setActivePageIndex] = useState<number>(0);
+  const [isMounted, setIsMounted] = useState<boolean>(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // Compile full database structure for the real PDF Document generator engine
+  const reportData = {
+    school: {
+      name: school.name,
+      logoUrl: school.logoUrl,
+      brandColor: school.brandColor
+    },
+    student: {
+      name: student.englishName || student.name
+    },
+    targetMonth: "June 2026",
+    artifacts: artifacts.map((art) => {
+      const matchSubject = subjects.find(s => s.id === art.subjectId);
+      return {
+        subject: matchSubject ? matchSubject.name : "ESL Lessons",
+        imageUrl: art.imageUrl,
+        ai_reflection: art.aiNarrative,
+        tags: art.tags || []
+      };
+    })
+  };
 
   // Group artifacts by subject and implement "INTELLIGENT SKIPPING" (zero artifacts = skip subject tab)
   const activeSubjectsWithWork = subjects.map((sub) => {
@@ -60,10 +89,40 @@ export const PortfolioMockPdf: React.FC<PortfolioMockPdfProps> = ({
   return (
     <div className="flex flex-col space-y-4" id="pdf-simulator-root">
       {/* Simulator Toolbar Controls */}
-      <div className="flex items-center justify-between p-3.5 bg-white border border-black/5 text-[#1C1C1C] rounded-md shadow-xs" id="pdf-toolbar">
-        <div className="flex items-center gap-2">
-          <div className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
-          <span className="text-[10px] font-bold uppercase tracking-widest text-[#2A435D]">PORTRAIT PORTFOLIO OVERVIEW</span>
+      <div className="flex items-center justify-between p-3.5 bg-white border border-black/5 text-[#1C1C1C] rounded-md shadow-xs animate-fadeIn" id="pdf-toolbar">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[#2A435D]">PORTRAIT PORTFOLIO OVERVIEW</span>
+          </div>
+
+          {/* Dynamic PDF Generation & Export Link */}
+          {isMounted ? (
+            <PDFDownloadLink
+              document={<MonthlyDiaryDocument reportData={reportData} />}
+              fileName={`${student.englishName.replace(/[^a-zA-Z0-9]/g, "_")}_Monthly_Diary.pdf`}
+            >
+              {({ loading }) => (
+                <button
+                  disabled={loading}
+                  className="flex items-center gap-1.5 py-1 px-3 text-[10px] font-bold text-white uppercase tracking-wider rounded-sm shadow-xs cursor-pointer hover:brightness-110 active:scale-[0.98] transition-all disabled:opacity-50"
+                  style={{ backgroundColor: school.brandColor }}
+                  id="pdf-download-harness-btn"
+                >
+                  <Download className="w-3 h-3 text-white shrink-0" />
+                  <span>{loading ? "Compiling PDF..." : "Render Real PDF"}</span>
+                </button>
+              )}
+            </PDFDownloadLink>
+          ) : (
+            <button
+              disabled
+              className="flex items-center gap-1.5 py-1 px-3 text-[10px] font-bold text-stone-400 bg-stone-100 border border-black/5 uppercase tracking-wider rounded-sm"
+            >
+              <div className="w-2.5 h-2.5 border-2 border-stone-300 border-t-stone-500 rounded-full animate-spin shrink-0" />
+              <span>Hooking PDF Engine...</span>
+            </button>
+          )}
         </div>
         
         <div className="flex items-center gap-3" id="toolbar-pages-nav">

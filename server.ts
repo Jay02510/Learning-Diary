@@ -7,6 +7,8 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
+import reflectionRouter from "./server/routes/reflection.ts";
+import artifactsRouter from "./server/routes/artifacts.ts";
 
 // Load local environment variables for non-sandboxed executions
 dotenv.config();
@@ -37,6 +39,89 @@ function getGenAIClient(): GoogleGenAI {
 async function startServer() {
   const app = express();
   app.use(express.json());
+
+  // Mount the customized reflection route handler
+  app.use(reflectionRouter);
+  app.use(artifactsRouter);
+
+  // ==================== CORS-ENABLED BULLETPROOF KOREAN FONT PROXY ====================
+  // Resolves, proxies, and streams a verified CJK/Korean TrueType font (.ttf) to bypass transient 404s
+  // and CORS constraints. This is highly optimized for React-PDF client-side embed engines.
+  let fontCache: Buffer | null = null;
+  app.get("/api/font/noto-sans-kr.ttf", async (req, res) => {
+    try {
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.setHeader("Cache-Control", "public, max-age=31536000"); // Cache for 1 year
+
+      if (fontCache) {
+        res.setHeader("Content-Type", "font/ttf");
+        return res.send(fontCache);
+      }
+
+      // Try Google Fonts CSS API to scrape the current active TrueType Font (.ttf) URL
+      try {
+        console.log("[FontProxy] Scraping Noto Sans KR CSS API form Google Fonts...");
+        const cssResponse = await fetch("https://fonts.googleapis.com/css?family=Noto+Sans+KR:400", {
+          headers: {
+            // An older browser User-Agent forces Google Fonts classic API to serve standard .ttf format
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/534.30 (KHTML, like Gecko) Chrome/12.0.742.112 Safari/534.30"
+          }
+        });
+        if (cssResponse.ok) {
+          const cssText = await cssResponse.text();
+          const ttfUrlMatch = cssText.match(/url\((https:\/\/fonts\.gstatic\.com\/[^)]+\.ttf)\)/);
+          if (ttfUrlMatch) {
+            const actualFontUrl = ttfUrlMatch[1].replace(/['"]/g, "");
+            console.log("[FontProxy] Successfully resolved active gstatic URL:", actualFontUrl);
+            const fontResponse = await fetch(actualFontUrl);
+            if (fontResponse.ok) {
+              const buf = Buffer.from(await fontResponse.arrayBuffer());
+              fontCache = buf;
+              res.setHeader("Content-Type", "font/ttf");
+              return res.send(buf);
+            }
+          }
+        }
+      } catch (innerErr) {
+        console.error("[FontProxy] Google Fonts CSS scraping failed, trying primary CDN fallback:", innerErr);
+      }
+
+      // Fallback 1: Noto Sans KR Variable TrueType font from Google Fonts original github branch on jsDelivr
+      try {
+        console.log("[FontProxy] Primary CDN fallback: Pulling Noto Sans KR Var ttf from Google Fonts GitHub...");
+        const cdnUrl = "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/notosanskr/NotoSansKR%5Bwght%5D.ttf";
+        const fontResponse = await fetch(cdnUrl);
+        if (fontResponse.ok) {
+          const buf = Buffer.from(await fontResponse.arrayBuffer());
+          fontCache = buf;
+          res.setHeader("Content-Type", "font/ttf");
+          return res.send(buf);
+        }
+      } catch (innerErr) {
+        console.error("[FontProxy] Primary CDN fallback failed:", innerErr);
+      }
+
+      // Fallback 2: Nanum Gothic Regular TrueType font from Google Fonts original github branch on jsDelivr
+      try {
+        console.log("[FontProxy] Secondary CDN fallback: Pulling Nanum Gothic Regular ttf from Google Fonts GitHub...");
+        const cdnUrl = "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/nanumgothic/NanumGothic-Regular.ttf";
+        const fontResponse = await fetch(cdnUrl);
+        if (fontResponse.ok) {
+          const buf = Buffer.from(await fontResponse.arrayBuffer());
+          fontCache = buf;
+          res.setHeader("Content-Type", "font/ttf");
+          return res.send(buf);
+        }
+      } catch (innerErr) {
+        console.error("[FontProxy] Secondary CDN fallback failed:", innerErr);
+      }
+
+      throw new Error("All resolved font pipelines collapsed.");
+    } catch (err: any) {
+      console.error("[FontProxy] Critical front-end fonts failure:", err);
+      return res.status(500).json({ error: "Failed to resolve Korean font", details: err.message });
+    }
+  });
 
   // ==================== API ENDPOINT: AI PORTFOLIO NARRATIVE GENERATOR ====================
   // Combines brief teacher bulletins and ESL curriculum tags into cohesive, professional, 

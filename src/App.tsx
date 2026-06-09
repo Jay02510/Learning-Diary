@@ -10,6 +10,7 @@ import { BrandingControl } from "./components/BrandingControl";
 import { ArtifactWorkspace } from "./components/ArtifactWorkspace";
 import { PortfolioMockPdf } from "./components/PortfolioMockPdf";
 import { TechnicalCodeViewer } from "./components/TechnicalCodeViewer";
+import { ArtifactUploadForm } from "./components/ArtifactUploadForm";
 import { GraduationCap, Sparkles, Database, FileText, CheckCircle, Smartphone, MapPin, Printer } from "lucide-react";
 
 export default function App() {
@@ -135,6 +136,15 @@ export default function App() {
               </p>
             </div>
           </div>
+
+          <ArtifactUploadForm
+            studentId={selectedStudent.id}
+            studentName={selectedStudent.englishName}
+            subject="Phonics & Blend Mastery"
+            imageUrl="https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&q=80&w=600"
+            selectedTags={["Word Associations", "Segmenting Drills", "Consonant Diagraphs"]}
+            targetMonth="2026-06"
+          />
         </section>
 
         {/* RIGHT COLUMN: ACTION PORTAL INTERFACES (col-span-8) */}
