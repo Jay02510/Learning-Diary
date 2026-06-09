@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { StudentProfile, SubjectModule, ArtifactItem } from "../types";
 import { PRESET_STUDENTS, PRESET_SUBJECTS } from "../data";
-import { PlusCircle, Sparkles, Image as ImageIcon, CheckCircle, Tag, Loader2, ArrowRight, Zap } from "lucide-react";
+import { PlusCircle, Sparkles, Image as ImageIcon, CheckCircle, Tag, Loader2, ArrowRight, Zap, X, Upload, RotateCcw, FolderOpen } from "lucide-react";
 import { useReflection } from "../hooks/useReflection";
 
 interface ArtifactWorkspaceProps {
@@ -30,6 +30,8 @@ export const ArtifactWorkspace: React.FC<ArtifactWorkspaceProps> = ({
   const [newImage, setNewImage] = useState<string>("https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&q=80&w=600");
   const [newNotes, setNewNotes] = useState<string>("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [dragActive, setDragActive] = useState<boolean>(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   
   // Generating states using both direct fetch and useReflection
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
@@ -52,8 +54,58 @@ export const ArtifactWorkspace: React.FC<ArtifactWorkspaceProps> = ({
     if (selectedTags.includes(tag)) {
       setSelectedTags(selectedTags.filter((t) => t !== tag));
     } else {
-      setSelectedTags([...selectedTags, tag]);
+      if (selectedTags.length < 3) {
+        setSelectedTags([...selectedTags, tag]);
+      }
     }
+  };
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0];
+      if (file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          if (event.target?.result) {
+            setNewImage(event.target.result as string);
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      if (file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          if (event.target?.result) {
+            setNewImage(event.target.result as string);
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+  };
+
+  const handleClearImage = () => {
+    setNewImage("");
   };
 
   const handleTriggerGenerator = async (artifactToUpdate: ArtifactItem) => {
@@ -228,123 +280,134 @@ export const ArtifactWorkspace: React.FC<ArtifactWorkspaceProps> = ({
           )}
         </div>
 
-        {activeSubjectArtifacts.map((artifact) => {
-          const isCurrentGen = isGenerating && genId === artifact.id;
-          return (
-            <div
-              key={artifact.id}
-              className="p-5 border border-black/5 hover:border-black/10 bg-[#FAF9F6]/20 hover:bg-[#FAF9F6]/40 rounded-md transition-all grid grid-cols-1 md:grid-cols-12 gap-5"
-              id={`idx-art-${artifact.id}`}
-            >
-              {/* Left Column: visual asset thumbnail */}
-              <div className="md:col-span-3 aspect-video md:aspect-square relative rounded-md border border-black/5 overflow-hidden bg-slate-100 self-start">
-                <img referrerPolicy="no-referrer" src={artifact.imageUrl} alt={artifact.imageAlt} className="absolute inset-0 w-full h-full object-cover select-none" />
-                <div className="absolute top-1.5 left-1.5 bg-[#2A435D] text-white text-[8px] font-bold tracking-widest px-2 py-0.5 rounded-sm font-sans uppercase">
-                  ANCHOR TASK
+        {activeSubjectArtifacts.length > 0 ? (
+          activeSubjectArtifacts.map((artifact) => {
+            const isCurrentGen = isGenerating && genId === artifact.id;
+            return (
+              <div
+                key={artifact.id}
+                className="p-5 border border-black/5 hover:border-black/10 bg-[#FAF9F6]/20 hover:bg-[#FAF9F6]/40 rounded-md transition-all grid grid-cols-1 md:grid-cols-12 gap-5"
+                id={`idx-art-${artifact.id}`}
+              >
+                {/* Left Column: visual asset thumbnail */}
+                <div className="md:col-span-3 aspect-video md:aspect-square relative rounded-md border border-black/5 overflow-hidden bg-slate-100 self-start">
+                  <img referrerPolicy="no-referrer" src={artifact.imageUrl} alt={artifact.imageAlt} className="absolute inset-0 w-full h-full object-cover select-none" />
+                  <div className="absolute top-1.5 left-1.5 bg-[#2A435D] text-white text-[8px] font-bold tracking-widest px-2 py-0.5 rounded-sm font-sans uppercase">
+                    ANCHOR TASK
+                  </div>
                 </div>
-              </div>
 
-              {/* Central Column: tags & notes editor */}
-              <div className="md:col-span-5 flex flex-col justify-between space-y-4">
-                <div className="space-y-3">
-                  <div className="flex flex-wrap gap-1" id={`tags-badge-${artifact.id}`}>
-                    {artifact.tags.map((tag) => (
-                      <span key={tag} className="flex items-center gap-1 text-[9px] font-bold text-stone-605 bg-white border border-black/5 px-2 py-0.5 rounded-sm uppercase tracking-wider">
-                        <Tag className="w-2.5 h-2.5 text-[#2A435D]" />
-                        {tag}
+                {/* Central Column: tags & notes editor */}
+                <div className="md:col-span-5 flex flex-col justify-between space-y-4">
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap gap-1" id={`tags-badge-${artifact.id}`}>
+                      {artifact.tags.map((tag) => (
+                        <span key={tag} className="flex items-center gap-1 text-[9px] font-bold text-stone-605 bg-white border border-black/5 px-2 py-0.5 rounded-sm uppercase tracking-wider">
+                          <Tag className="w-2.5 h-2.5 text-[#2A435D]" />
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                    
+                    <div className="space-y-1.5">
+                      <label className="block text-[8px] uppercase tracking-widest text-[#2A435D] font-bold">
+                        Teacher Observation Notes
+                      </label>
+                      <textarea
+                        value={artifact.teacherNotes}
+                        rows={2}
+                        onChange={(e) => onUpdateArtifact(artifact.id, { teacherNotes: e.target.value })}
+                        className="w-full bg-white text-xs border border-black/10 hover:border-black/20 rounded-md p-2.5 outline-hidden focus:ring-1 focus:ring-[#2A435D] text-stone-800 leading-normal"
+                        placeholder="Type brief bullets or remarks..."
+                      />
+                    </div>
+                  </div>
+
+                  <div className="text-[10px] text-stone-400 font-sans tracking-wide uppercase font-bold flex items-center justify-between">
+                    <span>T. Andrew Thompson</span>
+                    <span>June 2026</span>
+                  </div>
+                </div>
+
+                {/* Right Column: AI narrative view & compilation trigger */}
+                <div className="md:col-span-4 border-t md:border-t-0 md:border-l border-black/5 pt-4 md:pt-0 md:pl-4 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[8px] uppercase tracking-widest text-[#2A435D] font-bold flex items-center gap-1">
+                        <Sparkles className="w-2.5 h-2.5 text-[#2A435D]" /> Parent Narrative
                       </span>
-                    ))}
+                      {artifact.aiNarrative.startsWith("[Curriculum") || artifact.aiNarrative.includes("Working diligently") ? (
+                        <span className="text-[9px] text-[#2A435D] font-bold uppercase tracking-wider">Uncompiled</span>
+                      ) : (
+                        <span className="text-[9px] text-emerald-650 font-bold uppercase tracking-wider flex items-center gap-0.5">
+                          <CheckCircle className="w-3 h-3" /> Compiled
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-stone-600 leading-relaxed italic bg-[#FAF9F6] border border-black/5 p-3 rounded-md max-h-[140px] overflow-y-auto font-sans">
+                      "{artifact.aiNarrative}"
+                    </p>
                   </div>
-                  
-                  <div className="space-y-1.5">
-                    <label className="block text-[8px] uppercase tracking-widest text-[#2A435D] font-bold">
-                      Teacher Observation Notes
-                    </label>
-                    <textarea
-                      value={artifact.teacherNotes}
-                      rows={2}
-                      onChange={(e) => onUpdateArtifact(artifact.id, { teacherNotes: e.target.value })}
-                      className="w-full bg-white text-xs border border-black/10 hover:border-black/20 rounded-md p-2.5 outline-hidden focus:ring-1 focus:ring-[#2A435D] text-stone-800 leading-normal"
-                      placeholder="Type brief bullets or remarks..."
-                    />
-                  </div>
-                </div>
 
-                <div className="text-[10px] text-stone-400 font-sans tracking-wide uppercase font-bold flex items-center justify-between">
-                  <span>T. Andrew Thompson</span>
-                  <span>June 2026</span>
-                </div>
-              </div>
-
-              {/* Right Column: AI narrative view & compilation trigger */}
-              <div className="md:col-span-4 border-t md:border-t-0 md:border-l border-black/5 pt-4 md:pt-0 md:pl-4 flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-[8px] uppercase tracking-widest text-[#2A435D] font-bold flex items-center gap-1">
-                      <Sparkles className="w-2.5 h-2.5 text-[#2A435D]" /> Parent Narrative
-                    </span>
-                    {artifact.aiNarrative.startsWith("[Curriculum") || artifact.aiNarrative.includes("Working diligently") ? (
-                      <span className="text-[9px] text-[#2A435D] font-bold uppercase tracking-wider">Uncompiled</span>
-                    ) : (
-                      <span className="text-[9px] text-emerald-650 font-bold uppercase tracking-wider flex items-center gap-0.5">
-                        <CheckCircle className="w-3 h-3" /> Compiled
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-[11px] text-stone-600 leading-relaxed italic bg-[#FAF9F6] border border-black/5 p-3 rounded-md max-h-[140px] overflow-y-auto font-sans">
-                    "{artifact.aiNarrative}"
-                  </p>
-                </div>
-
-                <div className="mt-3 space-y-2">
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="mt-3 space-y-2">
                     <button
                       onClick={() => handleTriggerGenerator(artifact)}
                       disabled={isCurrentGen}
-                      className="inline-flex items-center justify-center gap-1.5 px-2 py-2 text-[10px] font-semibold text-white bg-slate-800 hover:bg-slate-850 disabled:bg-slate-400 rounded-sm cursor-pointer transition-all shadow-xs"
+                      className="w-full inline-flex items-center justify-center gap-2 px-3 py-2.5 text-xs font-bold text-white uppercase tracking-wider rounded-md cursor-pointer transition-all shadow-xs"
                       style={{ backgroundColor: brandColor }}
-                      title="Generate comprehensive 100-150 word parent narrative mapping milestones and qualitative benchmarks."
+                      id={`btn-generate-narrative-${artifact.id}`}
                     >
                       {isCurrentGen && genId === artifact.id ? (
                         <>
-                          <Loader2 className="w-3 h-3 animate-spin" />
-                          Writing...
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          Parent Narrative compiling...
                         </>
                       ) : (
                         <>
-                          <Sparkles className="w-3 h-3" />
-                          AI Narrative
+                          <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
+                          ✨ Generate Parent Narrative
                         </>
                       )}
                     </button>
-
-                    <button
-                      onClick={() => handleTriggerReflection(artifact)}
-                      disabled={isCurrentGen}
-                      className="inline-flex items-center justify-center gap-1.5 px-2 py-2 text-[10px] font-semibold text-neutral-800 bg-neutral-100 hover:bg-neutral-200 disabled:bg-stone-300 rounded-sm cursor-pointer transition-all border border-black/5"
-                      title="Generate highly concise, exactly 2-sentence monthly portfolio reflection under 45 words total."
-                    >
-                      {isCurrentGen && genId === artifact.id ? (
-                        <>
-                          <Loader2 className="w-3 h-3 animate-spin" />
-                          Drafting...
-                        </>
-                      ) : (
-                        <>
-                          <Zap className="w-3 h-3 text-amber-500" />
-                          AI Reflection
-                        </>
-                      )}
-                    </button>
+                    {notesError && genId === artifact.id && (
+                      <p className="text-[9px] text-red-500 font-medium mt-1 leading-tight">{notesError}. Loaded fallback narrative.</p>
+                    )}
                   </div>
-                  {notesError && genId === artifact.id && (
-                    <p className="text-[9px] text-red-500 font-medium mt-1 leading-tight">{notesError}. Loaded fallback narrative.</p>
-                  )}
                 </div>
               </div>
+            );
+          })
+        ) : (
+          <div className="p-10 border border-dashed border-stone-200 bg-white hover:bg-stone-50/20 rounded-md text-center flex flex-col items-center justify-center space-y-4 transition-all" id="subject-empty-state-card">
+            <div className="w-12 h-12 bg-[#2A435D]/5 rounded-full flex items-center justify-center text-[#2A435D]">
+              <FolderOpen className="w-6 h-6 stroke-[1.5]" />
             </div>
-          );
-        })}
+            
+            <div className="space-y-1 max-w-md mx-auto">
+              <h4 className="font-serif font-medium text-stone-800 text-sm">
+                No Artifacts in {activeSubject.name} yet
+              </h4>
+              <p className="text-xs text-stone-500 leading-relaxed font-sans font-normal">
+                This progress stream is currently inactive and will be omitted from the exported PDF to protect page boundaries. Add an assessment worksheet now!
+              </p>
+            </div>
+
+            <button
+              onClick={() => {
+                const formEl = document.getElementById("add-milestone-form-section");
+                formEl?.scrollIntoView({ behavior: "smooth" });
+                // Focus notes textarea if possible
+                const textarea = formEl?.querySelector("textarea");
+                textarea?.focus();
+              }}
+              className="px-4 py-2 hover:opacity-90 text-white rounded-md text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 cursor-pointer transition-all active:scale-[0.98]"
+              style={{ backgroundColor: brandColor }}
+            >
+              <PlusCircle className="w-4 h-4" />
+              + Upload First June Artifact
+            </button>
+          </div>
+        )}
 
         {/* Add New Milestone Work/Artifact form */}
         <div className="border border-dashed border-black/10 hover:border-black/20 rounded-md p-6 bg-white space-y-4" id="add-milestone-form-section">
@@ -356,35 +419,94 @@ export const ArtifactWorkspace: React.FC<ArtifactWorkspaceProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-12 gap-5" id="create-milestone-fields">
             {/* Choose preset educational image */}
             <div className="md:col-span-4" id="visual-selector">
-              <label className="block text-[9px] font-bold text-stone-400 uppercase tracking-widest mb-1.5">
-                Work Visual Illustration
+              <label className="block text-[9px] font-bold text-stone-400 uppercase tracking-widest mb-1.5 flex items-center justify-between">
+                <span>Work Visual Anchor Task</span>
+                {newImage && (
+                  <span className="text-[8px] bg-emerald-50 text-emerald-700 px-1 rounded-sm border border-emerald-100 lowercase font-mono">loaded</span>
+                )}
               </label>
-              <div className="grid grid-cols-2 gap-1.5" id="artifact-images-presets">
-                {[
-                  "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&q=80&w=600", // phonics cards
-                  "https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&q=80&w=600", // creative journal
-                  "https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&q=80&w=600", // speaker slide
-                  "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=600", // homework grade
-                ].map((imgUrl, i) => {
-                  const isChosen = newImage === imgUrl;
-                  return (
+
+              {newImage ? (
+                <div className="relative aspect-video rounded-md border border-black/10 bg-[#FAF9F6] p-1 flex flex-col justify-between overflow-hidden group">
+                  <img referrerPolicy="no-referrer" src={newImage} className="absolute inset-0 w-full h-full object-cover select-none" />
+                  
+                  {/* Absolute positioning of X / Clear button */}
+                  <div className="absolute top-1.5 right-1.5 flex gap-1 z-10">
                     <button
-                      key={i}
-                      id={`visual-choice-${i}`}
-                      onClick={() => setNewImage(imgUrl)}
-                      className={`relative aspect-video rounded-sm border overflow-hidden transition-all cursor-pointer ${
-                        isChosen ? "border-black scale-95" : "border-black/5 hover:border-black/10"
-                      }`}
+                      type="button"
+                      onClick={handleClearImage}
+                      title="Remove uploaded work sheet"
+                      className="p-1 px-1.5 bg-red-600 hover:bg-red-700 text-white rounded-md text-[9px] font-bold shadow-md transition-all uppercase flex items-center gap-1 cursor-pointer"
                     >
-                      <img referrerPolicy="no-referrer" src={imgUrl} className="absolute inset-0 w-full h-full object-cover" />
-                      {isChosen && (
-                        <div className="absolute inset-0 bg-slate-950/20 flex items-center justify-center">
-                          <CheckCircle className="w-4 h-4 text-white" />
-                        </div>
-                      )}
+                      <X className="w-3 h-3" /> Remove
                     </button>
-                  );
-                })}
+                  </div>
+
+                  {/* Replace Button overlay at bottom of the card on hover */}
+                  <div className="absolute inset-x-0 bottom-0 bg-stone-900/80 p-2 text-center translate-y-full group-hover:translate-y-0 transition-transform duration-200 backdrop-blur-xs flex items-center justify-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="text-white text-[9px] font-semibold border border-white/30 px-2 py-0.5 rounded-sm bg-stone-900/85 hover:bg-stone-950 transition-all flex items-center gap-1 cursor-pointer uppercase tracking-wider"
+                    >
+                      <RotateCcw className="w-3 h-3" /> Replace Work Sheet
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  onDragEnter={handleDrag}
+                  onDragOver={handleDrag}
+                  onDragLeave={handleDrag}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`aspect-video rounded-md border-2 border-dashed flex flex-col items-center justify-center p-4 text-center cursor-pointer transition-all ${
+                    dragActive 
+                      ? "border-[#2A435D] bg-[#2A435D]/5 scale-[0.98]" 
+                      : "border-stone-300 hover:border-[#2A435D] bg-[#FAF9F6]/50 hover:bg-stone-50 text-stone-500 hover:text-stone-700"
+                  }`}
+                  id="drag-drop-zone-anchor"
+                >
+                  <Upload className="w-6 h-6 text-stone-400 mb-1 animate-bounce" />
+                  <span className="text-[11px] font-bold uppercase tracking-wider block">Drag & Drop Image Here</span>
+                  <span className="text-[9px] text-stone-400 block mt-0.5">or click to browse local files</span>
+                </div>
+              )}
+              
+              <input 
+                ref={fileInputRef} 
+                type="file" 
+                accept="image/*" 
+                onChange={handleFileChange} 
+                className="hidden" 
+              />
+
+              {/* Presets Grid */}
+              <div className="mt-2 text-left">
+                <span className="block text-[8px] font-bold text-stone-400 uppercase tracking-widest mb-1.5">Or choose a quick demo preset:</span>
+                <div className="grid grid-cols-4 gap-1.5" id="artifact-images-presets">
+                  {[
+                    "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&q=80&w=600",
+                    "https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&q=80&w=600",
+                    "https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&q=80&w=600",
+                    "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=600",
+                  ].map((imgUrl, i) => {
+                    const isChosen = newImage === imgUrl;
+                    return (
+                      <button
+                        key={i}
+                        type="button"
+                        id={`visual-choice-${i}`}
+                        onClick={() => setNewImage(imgUrl)}
+                        className={`relative aspect-video rounded-sm border overflow-hidden transition-all cursor-pointer ${
+                          isChosen ? "border-slate-800 ring-2 ring-slate-800 scale-95" : "border-black/5 hover:border-black/10"
+                        }`}
+                      >
+                        <img referrerPolicy="no-referrer" src={imgUrl} className="absolute inset-0 w-full h-full object-cover" />
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
@@ -410,9 +532,10 @@ export const ArtifactWorkspace: React.FC<ArtifactWorkspaceProps> = ({
                   {OBS_EXAMPLES.map((ex, idx) => (
                     <button
                       key={idx}
+                      type="button"
                       id={`obs-shortcut-${idx}`}
                       onClick={() => setNewNotes(ex)}
-                      className="text-[9px] py-1 px-1.5 bg-[#FAF9F6] border border-black/5 hover:border-black/10 rounded-sm text-stone-600 hover:text-stone-800 truncate max-w-[120px] transition-all cursor-pointer"
+                      className="text-[9px] py-1 px-1.5 bg-[#FAF9F6] border border-black/5 hover:border-black/10 rounded-sm text-stone-605-600 hover:text-stone-800 truncate max-w-[120px] transition-all cursor-pointer"
                       title={ex}
                     >
                       {ex}
@@ -424,28 +547,41 @@ export const ArtifactWorkspace: React.FC<ArtifactWorkspaceProps> = ({
 
             {/* Objectives Tags check lists */}
             <div className="md:col-span-3 space-y-1.5" id="objectives-tags-selector">
-              <label className="block text-[9px] font-bold text-stone-400 uppercase tracking-widest">
-                Target Objective Tags
+              <label className="block text-[9px] font-bold text-stone-400 uppercase tracking-widest flex items-center justify-between">
+                <span>Objective Tags</span>
+                <span className="text-[8px] text-stone-500 lowercase font-mono">({selectedTags.length}/3 selected)</span>
               </label>
               <div className="flex flex-col gap-1 max-h-[110px] overflow-y-auto border border-black/5 p-2 bg-[#FAF9F6] rounded-md" id="objectives-checklist-box">
                 {activeSubject.predefinedObjectives.map((obj) => {
                   const isChecked = selectedTags.includes(obj);
+                  const isMaxReached = selectedTags.length >= 3;
+                  const isDisabled = isMaxReached && !isChecked;
+
                   return (
                     <button
                       key={obj}
+                      type="button"
+                      disabled={isDisabled}
                       id={`tag-opt-${obj.replace(/\s+/g, '-').toLowerCase()}`}
-                      onClick={() => handleTagToggle(obj)}
-                      className={`flex items-center gap-1.5 p-1 rounded-sm text-left transition-all cursor-pointer ${
-                        isChecked ? "bg-white border border-black/5 font-semibold" : "hover:bg-white/50"
+                      onClick={() => !isDisabled && handleTagToggle(obj)}
+                      className={`flex items-center gap-1.5 p-1 rounded-sm text-left transition-all ${
+                        isDisabled
+                          ? "opacity-50 bg-stone-100 cursor-not-allowed text-stone-400"
+                          : isChecked
+                            ? "bg-white border border-black/5 font-semibold cursor-pointer text-stone-900"
+                            : "hover:bg-white/50 cursor-pointer text-stone-605"
                       }`}
                     >
                       <input
                         type="checkbox"
                         checked={isChecked}
+                        disabled={isDisabled}
                         readOnly
-                        className="rounded border-black/10 text-stone-900 w-3 h-3 shrink-0"
+                        className={`rounded border-black/10 w-3 h-3 shrink-0 ${
+                          isDisabled ? "accent-stone-300 opacity-40" : "text-stone-900"
+                        }`}
                       />
-                      <span className="text-[10px] text-stone-605 truncate">{obj}</span>
+                      <span className="text-[10px] truncate">{obj}</span>
                     </button>
                   );
                 })}
